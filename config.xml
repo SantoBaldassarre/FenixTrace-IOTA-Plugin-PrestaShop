@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<module>
+    <name>fenixtrace</name>
+    <displayName><![CDATA[FenixTrace Blockchain Connector]]></displayName>
+    <version><![CDATA[1.0.0]]></version>
+    <description><![CDATA[Register PrestaShop products on the IOTA L1 blockchain via FenixTrace Integration Kit.]]></description>
+    <author><![CDATA[Fenix Software Labs]]></author>
+    <tab><![CDATA[administration]]></tab>
+    <is_configurable>1</is_configurable>
+    <need_instance>0</need_instance>
+    <limited_countries></limited_countries>
+</module>

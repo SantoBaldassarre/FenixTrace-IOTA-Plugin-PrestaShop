@@ -1,0 +1,4 @@
+#fenixtrace-panel { border-left: 3px solid #00E676; }
+#fenixtrace-panel .panel-heading { color: #00C853; font-weight: 600; }
+#fenixtrace-panel .label-success { background-color: #00C853; }
+#fenixtrace-panel code { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 3px 6px; border-radius: 3px; display: inline-block; margin-top: 4px; }
