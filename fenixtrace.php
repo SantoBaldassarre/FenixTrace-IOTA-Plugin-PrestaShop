@@ -63,21 +63,43 @@ class FenixTrace extends Module
         $output = '';
 
         if (Tools::isSubmit('submitFenixTraceSettings')) {
-            Configuration::updateValue('FENIXTRACE_KIT_URL', pSQL(Tools::getValue('FENIXTRACE_KIT_URL')));
+            $kit_url_raw = trim((string) Tools::getValue('FENIXTRACE_KIT_URL'));
+            $kit_url_valid = filter_var($kit_url_raw, FILTER_VALIDATE_URL);
+            $kit_url_scheme = $kit_url_valid ? parse_url($kit_url_valid, PHP_URL_SCHEME) : '';
+            if (!$kit_url_valid || !in_array($kit_url_scheme, array('http', 'https'), true)) {
+                return $this->displayError(
+                    $this->l('Integration Kit URL must be a valid http(s) URL.')
+                ) . $this->renderForm();
+            }
+            Configuration::updateValue('FENIXTRACE_KIT_URL', pSQL($kit_url_valid));
             Configuration::updateValue('FENIXTRACE_UPLOAD_DIR', pSQL(Tools::getValue('FENIXTRACE_UPLOAD_DIR')));
             Configuration::updateValue('FENIXTRACE_TEMPLATE', pSQL(Tools::getValue('FENIXTRACE_TEMPLATE')));
             Configuration::updateValue('FENIXTRACE_AUTO_SYNC', (int) Tools::getValue('FENIXTRACE_AUTO_SYNC'));
             $output .= $this->displayConfirmation($this->l('Settings updated successfully.'));
         }
 
-        // Sync single product via GET
+        // Sync single product via GET — require a CSRF-style token bound to the
+        // product id so a cross-site or accidental link cannot trigger a sync.
         if (Tools::getValue('fenixtrace_sync_product')) {
             $id_product = (int) Tools::getValue('fenixtrace_sync_product');
-            require_once dirname(__FILE__) . '/classes/FenixTraceApi.php';
-            $result = FenixTraceApi::syncProduct($id_product);
-            $output .= $result['success']
-                ? $this->displayConfirmation('Product synced! TX: ' . $result['txHash'])
-                : $this->displayError('Sync failed: ' . ($result['error'] ?? 'Unknown'));
+            $token = (string) Tools::getValue('fenixtrace_sync_token');
+            $expected_token = Tools::getAdminTokenLite('AdminModules');
+            $expected_product_token = hash_hmac(
+                'sha256',
+                'fenixtrace_sync|' . $id_product,
+                $expected_token ?: _COOKIE_KEY_
+            );
+            if (!$id_product || !hash_equals($expected_product_token, $token)) {
+                $output .= $this->displayError(
+                    $this->l('Invalid or missing sync token. Reload the product page and try again.')
+                );
+            } else {
+                require_once dirname(__FILE__) . '/classes/FenixTraceApi.php';
+                $result = FenixTraceApi::syncProduct($id_product);
+                $output .= $result['success']
+                    ? $this->displayConfirmation('Product synced! TX: ' . htmlspecialchars((string) $result['txHash'], ENT_QUOTES, 'UTF-8'))
+                    : $this->displayError('Sync failed: ' . htmlspecialchars((string) ($result['error'] ?? 'Unknown'), ENT_QUOTES, 'UTF-8'));
+            }
         }
 
         return $output . $this->renderForm();
@@ -167,12 +189,22 @@ class FenixTrace extends Module
         if (!$id_product) return '';
 
         $sync = Db::getInstance()->getRow(
-            'SELECT * FROM `' . _DB_PREFIX_ . 'fenixtrace_sync` WHERE `id_product` = ' . $id_product . ' ORDER BY `id_sync` DESC'
+            'SELECT * FROM `' . _DB_PREFIX_ . 'fenixtrace_sync` WHERE `id_product` = ' . (int) $id_product . ' ORDER BY `id_sync` DESC'
+        );
+
+        $admin_token = Tools::getAdminTokenLite('AdminModules');
+        $sync_token = hash_hmac(
+            'sha256',
+            'fenixtrace_sync|' . (int) $id_product,
+            $admin_token ?: _COOKIE_KEY_
         );
 
         $this->context->smarty->assign(array(
             'fenixtrace_sync' => $sync ?: array(),
-            'fenixtrace_sync_url' => $this->context->link->getAdminLink('AdminModules') . '&configure=' . $this->name . '&fenixtrace_sync_product=' . $id_product,
+            'fenixtrace_sync_url' => $this->context->link->getAdminLink('AdminModules')
+                . '&configure=' . $this->name
+                . '&fenixtrace_sync_product=' . (int) $id_product
+                . '&fenixtrace_sync_token=' . urlencode($sync_token),
         ));
 
         return $this->display(__FILE__, 'views/templates/admin/product_tab.tpl');
