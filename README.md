@@ -49,9 +49,17 @@ The module creates a `ps_fenixtrace_sync` table to track sync status per product
 - `ipfs_hash`: IPFS content hash
 - `last_sync_at`: Timestamp of last successful sync
 
+## Other Plugins
+
+| Plugin | Platform | Repository |
+|---|---|---|
+| **FenixTrace for Odoo** | Odoo 16/17 | [GitHub](https://github.com/SantoBaldassarre/FenixTrace-IOTA-Plugin-Odoo) |
+| **FenixTrace for WooCommerce** | WordPress + WooCommerce | [GitHub](https://github.com/SantoBaldassarre/FenixTrace-IOTA-Plugin-WooCommerce) |
+
 ## Links
 
-- [FenixTrace Platform](https://trace.fenixsoftwarelabs.com)
+- [FenixTrace Platform](https://fenixtrace.com)
+- [FenixTrace Integration Docs](https://fenixtrace.com/docs/integration-gateway)
 - [Integration Kit](https://github.com/SantoBaldassarre/FenixTrace-IOTA-auto-add-product-Integration-Kit)
 - [Fenix Software Labs](https://www.fenixsoftwarelabs.com)
 
